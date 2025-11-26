@@ -121,22 +121,6 @@ Reference commits:
    - Change `isReleaseBranch` from `false` to `true`
    - Do NOT change the `release` field (it's already correct from Step 1)
 
-2. **flake.nix**
-   - Update the nixpkgs input to track the corresponding stable branch
-   - Example: For `release-25.11`, change from:
-     ```nix
-     inputs.nixpkgs.url = "github:NixOS/nixpkgs/nixos-unstable";
-     ```
-     to:
-     ```nix
-     inputs.nixpkgs.url = "github:NixOS/nixpkgs/nixos-25.11";
-     ```
-   - Run `nix flake update` to update flake.lock to the stable branch
-   - Commit the flake.nix and flake.lock changes
-
-**Note**: The release branch should track the stable NixOS release channel
-(e.g., `nixos-25.11`), while master continues to track `nixos-unstable`.
-
 #### Step 3.5: On master - Update CI for the New Release Branch
 
 **When**: After marking the release branch as a release branch (Step 3)
@@ -165,37 +149,6 @@ Reference commits:
 
    - This ensures automated flake.lock updates run on the current stable branch
    - Note: We only maintain CI for the latest stable release, not older releases
-
-2. **.github/dependabot.yml** (on master)
-   - Replace the old stable branch with the new release branch
-   - Example: When creating `release-25.11`, update the target-branch from:
-
-     ```yaml
-     - package-ecosystem: "github-actions"
-       directory: "/"
-       target-branch: "release-25.05"
-       schedule:
-         interval: "weekly"
-       commit-message:
-         prefix: "ci:"
-     ```
-
-     to:
-
-     ```yaml
-     - package-ecosystem: "github-actions"
-       directory: "/"
-       target-branch: "release-25.11"
-       schedule:
-         interval: "weekly"
-       commit-message:
-         prefix: "ci:"
-     ```
-
-   - This ensures automated dependency updates for GitHub Actions on the current
-     stable branch
-   - Note: We only maintain dependabot for the latest stable release, not older
-     releases
 
 **Important**: CI workflows are executed from master, so this change must be
 committed to the master branch.
