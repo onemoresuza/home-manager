@@ -137,6 +137,7 @@ let
       ./programs/home-manager.nix
       ./programs/hstr.nix
       ./programs/htop.nix
+      ./programs/hut.nix
       ./programs/hyfetch.nix
       ./programs/hyprlock.nix
       ./programs/hyprpanel.nix
