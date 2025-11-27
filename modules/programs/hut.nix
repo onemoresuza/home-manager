@@ -70,11 +70,22 @@ in
       default = { };
       type = types.attrsOf (types.submodule instanceType);
     };
+    delegateFileWrite = {
+      enable = mkEnableOption "delegate the writing of the configuration";
+      contents = {
+        instances = mkOption {
+          description = "programs.hut.instances as a string";
+          readOnly = true;
+          default = text;
+          type = types.str;
+        };
+      };
+    };
   };
 
   config = mkIf cfg.enable {
     home.packages = mkIf (cfg.package != null) [ cfg.package ];
-    xdg.configFile."hut/config" = mkIf (cfg.instances != { }) {
+    xdg.configFile."hut/config" = mkIf (!cfg.delegateFileWrite.enable && cfg.instances != { }) {
       inherit text;
     };
   };
