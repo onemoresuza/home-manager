@@ -310,6 +310,7 @@ let
       ./programs/pywal.nix
       ./programs/rbenv.nix
       ./programs/wallust.nix
+      ./programs/warpd.nix
       ./programs/watson.nix
       ./programs/waveterm.nix
       ./programs/waylogout.nix
