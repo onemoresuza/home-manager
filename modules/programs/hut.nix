@@ -77,6 +77,7 @@ in
           description = "programs.hut.instances as a string";
           readOnly = true;
           default = text;
+          defaultText = "<programs.hut.instances as a string>";
           type = types.str;
         };
       };
