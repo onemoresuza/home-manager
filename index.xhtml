@@ -6,7 +6,7 @@
   <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
  <title>Home Manager Manual</title>
 <link rel="stylesheet" type="text/css" href="style.css" />
-<script src="highlightjs/highlight.pack.js" type="text/javascript"></script><script src="highlightjs/loader.js" type="text/javascript"></script>
+<script src="highlightjs/highlight.pack.js" type="text/javascript"></script><script src="highlightjs/loader.js" type="text/javascript"></script><script src="anchor-links.js" type="text/javascript"></script>
  <meta name="generator" content="nixos-render-docs" />
  <link rel="home" href="index.xhtml" title="Home Manager Manual" />
  <link rel="next" href="options.xhtml" title="Appendix A. Home Manager Configuration Options" />
@@ -716,9 +716,8 @@ to that of NixOS. The <code class="literal">flake.nix</code> would be:</p><pre><
 </code></pre><p>and it is also rebuilt with the nix-darwin generations. The rebuild
 command here may be <code class="literal">darwin-rebuild switch --flake &lt;flake-uri&gt;</code>.</p><p>You can use the above <code class="literal">flake.nix</code> as a template in <code class="literal">~/.config/darwin</code> by</p><pre><code class="programlisting  shell">$ nix flake new ~/.config/darwin -t github:nix-community/home-manager#nix-darwin
 </code></pre>
-</div><div class="section"> <div class="titlepage">  <div>   <div>    <h2 id="sec-flakes-flake-parts-module" class="title" style="clear: both">flake-parts module   </h2>  </div> </div></div><p>When using <a class="link" href="https://flake.parts"  target="_top">flake-parts</a>
-you may wish to import Home Manager’s flake module,
-<code class="literal">flakeModules.home-manager</code>.</p><pre><code class="programlisting  nix">{
+</div><div class="section"> <div class="titlepage">  <div>   <div>    <h2 id="sec-flakes-flake-parts-module" class="title" style="clear: both">flake-parts module   </h2>  </div> </div></div><p>When using <a class="link" href="https://flake.parts"  target="_top">flake-parts</a> you may wish to import Home
+Manager’s flake module, <code class="literal">flakeModules.home-manager</code>.</p><pre><code class="programlisting nix">{
   description = &quot;flake-parts configuration&quot;;
 
   inputs = {
@@ -728,15 +727,41 @@ you may wish to import Home Manager’s flake module,
     flake-parts.url = &quot;github:hercules-ci/flake-parts&quot;;
   };
 
-  outputs = inputs@{ flake-parts, ... }:
+  outputs = inputs@{
+    flake-parts,
+    home-manager,
+    nixpkgs,
+    ...
+  }:
     flake-parts.lib.mkFlake { inherit inputs; } {
       imports = [
         # Import home-manager&#x27;s flake module
         inputs.home-manager.flakeModules.home-manager
       ];
       flake = {
-        # Define `homeModules`, `homeConfigurations`,
-        # `nixosConfigurations`, etc here
+        # Reusable Home Manager module.
+        homeModules.bash= { pkgs, ... }: {
+          programs.bash = {
+            enable = true;
+            shellAliases = {
+              ll = &quot;ls -l&quot;;
+            };
+          };
+          home.packages = [ pkgs.hello ];
+        };
+
+        # Concrete Home Manager configuration.
+        homeConfigurations.alice = home-manager.lib.homeManagerConfiguration {
+          pkgs = import nixpkgs { system = &quot;x86_64-linux&quot;; };
+          modules = [
+            inputs.self.homeModules.bash
+            {
+              home.username = &quot;alice&quot;;
+              home.homeDirectory = &quot;/home/alice&quot;;
+              home.stateVersion = &quot;25.11&quot;;
+            }
+          ];
+        };
       };
       # See flake.parts for more features, such as `perSystem`
     };
@@ -1054,7 +1079,7 @@ truly noteworthy news. For example, a bug fix or new option does
 generally not need a news entry.</p><p>If you do have a change worthy of a news entry then please add one in
 <a class="link" href="https://github.com/nix-community/home-manager/blob/master/modules/misc/news.nix"  target="_top"><code class="literal">news.nix</code></a>
 but you should follow some basic guidelines:</p><div class="itemizedlist"><ul class="itemizedlist " style="list-style-type: disc;"><li class="listitem"><p>Use the included news entry generator to create a news entry file:</p><pre><code class="programlisting  shell">$ nix run .#create-news-entry
-</code></pre><p>Alternatively, you can directly use the script:</p><pre><code class="programlisting  shell">$ modules/misc/news/create-news-entry.sh
+</code></pre><p>Alternatively, you can directly use the script:</p><pre><code class="programlisting  shell">$ nix-shell -A dev --run modules/misc/news/create-news-entry.sh
 </code></pre><p>This will create a new file inside the <code class="literal">modules/misc/news</code> directory
 with some placeholder information that you can edit.</p></li><li class="listitem"><p>The entry condition should be as specific as possible. For example,
 if you are changing or deprecating a specific option then you could
@@ -1196,8 +1221,8 @@ $ nix run .#tests -- alacritty -- --verbose
 through</p><pre><code class="programlisting  shell">$ nix-build --pure tests --option allow-import-from-derivation false -A build.alacritty-empty-settings
 </code></pre><p>However, those invocations will impurely source the system’s Nixpkgs,
 and may cause failures. To run against the Nixpkgs from the <code class="literal">flake.lock</code> file,
-use instead e.g.</p><pre><code class="programlisting  shell">$ nix build --reference-lock-file flake.lock --option allow-import-from-derivation false ./tests#test-all
-</code></pre><p>or</p><pre><code class="programlisting  shell">$ nix build --reference-lock-file flake.lock --option allow-import-from-derivation false ./tests#test-alacritty-empty-settings
+use instead e.g.</p><pre><code class="programlisting  shell">$ nix build --option allow-import-from-derivation false .#test-all
+</code></pre><p>or</p><pre><code class="programlisting  shell">$ nix build --option allow-import-from-derivation false .#test-alacritty-empty-settings
 </code></pre><p>Some tests may be marked with <code class="literal">enableLegacyIfd</code>, those may be run by run with e.g.</p><pre><code class="programlisting  shell">$ nix-build --pure tests --arg enableLegacyIfd true -A build.mytest
 </code></pre>
 </div>
@@ -1282,7 +1307,10 @@ way. In Bash and Z shell this can be done by adding</p><pre><code class="program
 </code></pre><p>to your <code class="literal">.profile</code> and <code class="literal">.zshrc</code> files, respectively. The
 <code class="literal">hm-session-vars.sh</code> file should work in most Bourne-like shells. For
 fish shell, it is possible to source it using <a class="link" href="https://github.com/oh-my-fish/plugin-foreign-env"  target="_top">the foreign-env
-plugin</a></p><pre><code class="programlisting  bash">fenv source &quot;$HOME/.nix-profile/etc/profile.d/hm-session-vars.sh&quot; &gt; /dev/null
+plugin</a> or using the builtin
+<a class="link" href="https://github.com/bouk/babelfish"  target="_top">babelfish</a>-translated variables:</p><pre><code class="programlisting  bash">fenv source &quot;$HOME/.nix-profile/etc/profile.d/hm-session-vars.sh&quot; &gt; /dev/null
+# or
+source &quot;$HOME/.nix-profile/etc/profile.d/hm-session-vars.fish&quot;
 </code></pre>
 </div><div class="section"> <div class="titlepage">  <div>   <div>    <h2 id="_how_to_set_up_a_configuration_for_multiple_users_machines" class="title" style="clear: both">How to set up a configuration for multiple users/machines?   </h2>  </div> </div></div><p>A typical way to prepare a repository of configurations for multiple
 logins and machines is to prepare one &quot;top-level&quot; file for each unique
